@@ -347,7 +347,7 @@
 </div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbzH4Ty2Y5_8Mw0CEPnZ7l55yQzr5LBtFfzJcmSeHW_IEmrplkvrzl4ehQS_Slfbh7ukFA/exec';
+const API = 'https://script.google.com/macros/s/AKfycbxaH7QXtZNrxvvRJ8pcT6FOdk-17kA8GD3u1zURMC12ezkRnMv-7gD5RjWk-SLhhhDuoQ/exec';
 const SK = { senders:'sy_senders', recipients:'sy_recipients', history:'sy_history' };
 
 const DEFAULT_SENDERS = [
@@ -588,35 +588,41 @@ async function sendMail(){
   notif.innerHTML='<div class="spinner" style="display:inline-block;vertical-align:middle;margin-right:6px"></div> 발송 중...';
   notif.className='notif notif-warning'; notif.style.display='block';
 
-  const fname = `신영에셋_업무공유_${from||'전체'}~${to||'전체'}.xlsx`;
-  const b64 = buildXlsxB64(data);
   const toStr = sel.map(r=>r.email).join(',');
-  const body = `<p>안녕하세요,</p><p>신영에셋 업무 공유 내용을 전달드립니다.</p>
-    <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:13px">
-      <tr style="background:#EEF2FF"><th>일시</th><th>작성자</th><th>직책</th><th>내용</th></tr>
-      ${data.map(m=>`<tr><td style="white-space:nowrap">${fmt(m.ts,true)}</td><td>${esc(m.name)}</td><td>${esc(m.title)}</td><td>${esc(m.text)}</td></tr>`).join('')}
-    </table><br><p>첨부파일(엑셀)에서도 확인하실 수 있습니다.</p>`;
-  const bound = 'bnd_'+Date.now();
-  const raw = [`To: ${toStr}`,`Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subj)))}?=`,'MIME-Version: 1.0',`Content-Type: multipart/mixed; boundary="${bound}"`,``,`--${bound}`,'Content-Type: text/html; charset=UTF-8','',body,'',`--${bound}`,`Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; name="${fname}"`,'Content-Transfer-Encoding: base64',`Content-Disposition: attachment; filename="${fname}"`,``,b64,'',`--${bound}--`].join('\r\n');
-  const encoded = btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const bodyHtml = `<p>안녕하세요,</p>
+<p>신영에셋 업무 공유 내용을 전달드립니다. (기간: ${from||'전체'} ~ ${to||'전체'})</p>
+<br>
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;font-size:13px;width:100%">
+  <tr style="background:#EEF2FF;font-weight:600"><th>일시</th><th>작성자</th><th>직책</th><th>내용</th></tr>
+  ${data.map(m=>`<tr><td style="white-space:nowrap;color:#666">${fmt(m.ts,true)}</td><td style="font-weight:500">${esc(m.name)}</td><td>${esc(m.title)}</td><td>${esc(m.text)}</td></tr>`).join('')}
+</table>
+<br><p style="color:#888;font-size:12px">본 메일은 신영에셋 업무공유 허브에서 자동 발송되었습니다.</p>`;
 
   try {
-    const resp = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
-      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${window.__gmailToken||'NEED_TOKEN'}`},
-      body: JSON.stringify({raw:encoded})
+    const resp = await fetch(API, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {'Content-Type':'text/plain'},
+      body: JSON.stringify({
+        action: 'sendmail',
+        to: toStr,
+        subject: subj,
+        body: bodyHtml
+      })
     });
-    if(resp.ok){
+    const result = await resp.json();
+    if(result.result === 'ok'){
       notif.innerHTML=`<i class="ti ti-check"></i> 발송 완료! 수신: ${sel.map(r=>r.name).join(', ')}`;
       notif.className='notif notif-success'; notif.style.display='block';
-      const rec = {ts:Date.now(), recipients:sel.map(r=>r.name+'<'+r.email+'>'), period:`${from||'전체'}~${to||'전체'}`, count:data.length, file:fname};
+      const rec = {ts:Date.now(), recipients:sel.map(r=>r.name+'<'+r.email+'>'), period:`${from||'전체'}~${to||'전체'}`, count:data.length};
       history.unshift(rec); if(history.length>50) history=history.slice(0,50);
       saveLocal(); renderHistory();
     } else {
-      notif.innerHTML='<i class="ti ti-alert-circle"></i> Gmail 인증 필요 — Claude.ai에서 Gmail 커넥터를 연결하거나 수동 발송해 주세요.';
+      notif.innerHTML=`<i class="ti ti-alert-circle"></i> 발송 실패: ${result.error||'알 수 없는 오류'}`;
       notif.className='notif notif-danger'; notif.style.display='block';
     }
   } catch(e){
-    notif.innerHTML='<i class="ti ti-alert-circle"></i> Gmail 인증 필요 — Claude.ai에서 Gmail 커넥터를 연결하거나 수동 발송해 주세요.';
+    notif.innerHTML='<i class="ti ti-alert-circle"></i> 발송 실패 — 네트워크 연결을 확인해 주세요.';
     notif.className='notif notif-danger'; notif.style.display='block';
   }
 }
