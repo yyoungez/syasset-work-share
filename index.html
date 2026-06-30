@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>신영에셋 업무 공유 허브</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #F5F6FA;
+    --surface: #FFFFFF;
+    --surface2: #F0F2F8;
+    --border: #E2E6F0;
+    --border-strong: #C8CEDF;
+    --text: #1A1F36;
+    --text-secondary: #4A5270;
+    --text-muted: #8B92AA;
+    --accent: #3B5BDB;
+    --accent-bg: #EEF2FF;
+    --accent-border: #BAC8FF;
+    --accent-text: #3B5BDB;
+    --on-accent: #FFFFFF;
+    --success: #2F9E44;
+    --success-bg: #EBFBEE;
+    --success-border: #8CE99A;
+    --danger: #C92A2A;
+    --danger-bg: #FFF5F5;
+    --danger-border: #FFA8A8;
+    --warning-bg: #FFF9DB;
+    --warning-border: #FFE066;
+    --warning-text: #7B5E00;
+    --radius: 8px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+  /* NAV */
+  .topnav { background: var(--surface); border-bottom: 1px solid var(--border); height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+  .topnav-logo { display: flex; align-items: center; gap: 10px; }
+  .topnav-logo .logo-mark { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .topnav-logo .logo-mark i { color: #fff; font-size: 17px; }
+  .topnav-logo span { font-weight: 600; font-size: 15px; letter-spacing: -0.3px; }
+  .topnav-right { display: flex; align-items: center; gap: 10px; }
+  .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+  .conn-dot.ok { background: var(--success); }
+  .conn-dot.err { background: var(--danger); }
+
+  /* TABS */
+  .tab-bar { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; gap: 0; padding: 0 24px; overflow-x: auto; }
+  .tab-btn { padding: 14px 18px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--text-muted); border-bottom: 2px solid transparent; white-space: nowrap; display: flex; align-items: center; gap: 6px; transition: color 0.15s; }
+  .tab-btn:hover { color: var(--text-secondary); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* LAYOUT */
+  .page { max-width: 980px; margin: 0 auto; padding: 24px 20px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+  .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* FORM */
+  .form-group { margin-bottom: 12px; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 5px; display: block; }
+  input, select, textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--accent-bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; font-size: 13px; transition: border-color 0.15s, background 0.15s; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); background: #E8EFFE; }
+  textarea { resize: none; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font-family: 'Noto Sans KR', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn:hover { background: var(--surface2); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #2F4AC0; border-color: #2F4AC0; }
+  .btn-danger { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-accent { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); }
+  .badge-success { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+
+  /* NOTIFICATION */
+  .notif { padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 12px; display: none; line-height: 1.5; }
+  .notif-success { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+  .notif-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+  .notif-warning { background: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); }
+
+  /* SYNC BAR */
+  .sync-bar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--radius); font-size: 12px; margin-bottom: 12px; }
+  .sync-bar.ok { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+  .sync-bar.err { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+  .sync-bar.loading { background: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); }
+
+  /* CHAT */
+  #msg-list { overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 18px; min-height: 360px; max-height: 480px; background: var(--bg); }
+  .msg-wrap { display: flex; flex-direction: column; max-width: 80%; }
+  .msg-wrap.mine { align-self: flex-end; align-items: flex-end; }
+  .msg-wrap.others { align-self: flex-start; align-items: flex-start; }
+  .msg-row { display: flex; align-items: flex-end; gap: 8px; }
+  .msg-wrap.mine .msg-row { flex-direction: row-reverse; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .msg-bubble { padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; max-width: 100%; }
+  .msg-wrap.mine .msg-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+  .msg-wrap.others .msg-bubble { background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text); }
+  .msg-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 8px; }
+  .msg-wrap.mine .msg-meta { margin-right: 38px; }
+  .msg-wrap.others .msg-meta { margin-left: 38px; }
+  .msg-sender { font-weight: 500; color: var(--text-secondary); }
+  .msg-input-wrap { padding: 14px 18px; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-end; background: var(--surface2); }
+  .msg-input-wrap textarea { flex: 1; background: var(--accent-bg); border: 1px solid var(--border-strong); }
+
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { text-align: left; padding: 10px 12px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--text); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--bg); }
+
+  /* FILTER BAR */
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 12px 16px; background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: var(--radius); margin-bottom: 16px; }
+  .filter-bar input, .filter-bar select { background: var(--surface); border: 1px solid var(--border-strong); width: auto; }
+
+  /* RECIPIENT CHIPS */
+  .chip-area { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--accent-bg); min-height: 46px; }
+  .rchip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); font-size: 12px; cursor: pointer; background: var(--surface); color: var(--text-secondary); transition: all 0.12s; user-select: none; }
+  .rchip.on { background: var(--accent-bg); border-color: var(--accent-border); color: var(--accent); font-weight: 500; }
+
+  /* MEMBER ROW */
+  .member-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .member-row:last-child { border-bottom: none; }
+  .member-info p { font-size: 14px; font-weight: 500; }
+  .member-info span { font-size: 11px; color: var(--text-muted); }
+
+  /* DIVIDER */
+  hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+  /* SPINNER */
+  .spinner { width: 14px; height: 14px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+  .empty i { font-size: 36px; display: block; margin-bottom: 10px; opacity: 0.5; }
+  .empty p { font-size: 13px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 680px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .page { padding: 16px 12px; }
+    .topnav { padding: 0 14px; }
+    #msg-list { min-height: 260px; max-height: 360px; }
+    .tab-btn { padding: 12px 12px; font-size: 12px; }
+  }
+  @media print {
+    .topnav, .tab-bar, .msg-input-wrap, .btn { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="topnav-logo">
+    <div class="logo-mark"><i class="ti ti-building-office"></i></div>
+    <span>신영에셋 업무 공유 허브</span>
+    <div id="conn-dot" class="conn-dot" title="연결 상태"></div>
+  </div>
+  <div class="topnav-right">
+    <span style="font-size:12px;color:var(--text-muted)">작성자</span>
+    <select id="active-user-select" style="width:auto;padding:5px 10px;font-size:13px" onchange="onUserSwitch()"></select>
+    <button class="btn btn-sm" onclick="loadMsgs(true)" title="새로고침">
+      <i class="ti ti-refresh"></i>
+    </button>
+  </div>
+</nav>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('chat',this)"><i class="ti ti-message-circle"></i> 업무 공유</button>
+  <button class="tab-btn" onclick="switchTab('log',this)"><i class="ti ti-list"></i> 전체 기록</button>
+  <button class="tab-btn" onclick="switchTab('export',this)"><i class="ti ti-send"></i> 보고서 발송</button>
+  <button class="tab-btn" onclick="switchTab('admin',this)"><i class="ti ti-settings"></i> 관리</button>
+</div>
+
+<!-- ── TAB: CHAT ─────────────────────────────────── -->
+<div id="tab-chat" class="tab-content active">
+  <div class="page">
+    <div id="sync-bar" class="sync-bar loading">
+      <div class="spinner"></div> Google Sheets 연결 중...
+    </div>
+    <div class="card" style="overflow:hidden">
+      <div class="card-header">
+        <span class="card-title"><i class="ti ti-users"></i> 실시간 업무 공유</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span id="msg-count" class="badge badge-accent"></span>
+          <span id="last-sync" style="font-size:11px;color:var(--text-muted)"></span>
+        </div>
+      </div>
+      <div id="msg-list"></div>
+      <div class="msg-input-wrap">
+        <textarea id="msg-input" rows="2" placeholder="공유할 업무 내용 입력 — Enter 전송 / Shift+Enter 줄바꿈" onkeydown="handleKey(event)"></textarea>
+        <button class="btn btn-primary" id="send-btn" onclick="sendMsg()" style="height:62px;padding:0 20px">
+          <i class="ti ti-send"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB: LOG ──────────────────────────────────── -->
+<div id="tab-log" class="tab-content">
+  <div class="page">
+    <div class="filter-bar">
+      <input type="date" id="filter-from" style="width:145px" onchange="renderLog()" />
+      <span style="font-size:13px;color:var(--text-muted)">~</span>
+      <input type="date" id="filter-to" style="width:145px" onchange="renderLog()" />
+      <select id="filter-author" style="width:130px" onchange="renderLog()"><option value="">전체 작성자</option></select>
+      <button class="btn btn-sm" onclick="clearFilters()" style="margin-left:auto"><i class="ti ti-refresh"></i> 초기화</button>
+    </div>
+    <div class="card" style="overflow:hidden">
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr>
+            <th style="width:155px">일시</th>
+            <th style="width:100px">작성자</th>
+            <th>내용</th>
+            <th style="width:60px"></th>
+          </tr></thead>
+          <tbody id="log-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB: EXPORT ───────────────────────────────── -->
+<div id="tab-export" class="tab-content">
+  <div class="page">
+    <div class="grid2" style="margin-bottom:16px">
+
+      <!-- 엑셀 -->
+      <div class="card" style="padding:20px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:7px;color:var(--text)">
+          <i class="ti ti-file-spreadsheet" style="color:var(--accent)"></i> 엑셀 내보내기
+        </h3>
+        <div class="form-group">
+          <label class="form-label">기간</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="date" id="exp-from" style="flex:1" />
+            <span style="font-size:12px;color:var(--text-muted)">~</span>
+            <input type="date" id="exp-to" style="flex:1" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">작성자 필터</label>
+          <select id="exp-author"><option value="">전체</option></select>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="exportExcel()">
+          <i class="ti ti-download"></i> 엑셀 다운로드
+        </button>
+      </div>
+
+      <!-- Gmail -->
+      <div class="card" style="padding:20px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:7px;color:var(--text)">
+          <i class="ti ti-brand-gmail" style="color:var(--accent)"></i> 이메일 발송
+        </h3>
+        <div class="form-group">
+          <label class="form-label">발송 기간</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="date" id="mail-from" style="flex:1" />
+            <span style="font-size:12px;color:var(--text-muted)">~</span>
+            <input type="date" id="mail-to" style="flex:1" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">수신자 선택 (클릭으로 선택)</label>
+          <div id="mail-chips" class="chip-area"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">메일 제목</label>
+          <input type="text" id="mail-subject" value="[업무공유] 신영에셋 업무 공유 보고서" />
+        </div>
+        <div id="mail-notif" class="notif"></div>
+        <button class="btn btn-primary" style="width:100%" onclick="sendMail()">
+          <i class="ti ti-send"></i> 이메일 발송
+        </button>
+      </div>
+    </div>
+
+    <!-- 발송 이력 -->
+    <div class="card" style="padding:20px">
+      <h3 style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text-secondary);display:flex;align-items:center;gap:6px">
+        <i class="ti ti-history"></i> 발송 이력
+      </h3>
+      <div id="send-history"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB: ADMIN ────────────────────────────────── -->
+<div id="tab-admin" class="tab-content">
+  <div class="page">
+    <div style="padding:10px 14px;background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:var(--radius);margin-bottom:16px;font-size:13px;color:var(--accent);display:flex;align-items:center;gap:8px">
+      <i class="ti ti-table"></i>
+      Google Sheets 원본 데이터 →
+      <a href="https://docs.google.com/spreadsheets/d/1LbQIfTfODUXDVnq3xedIo39OE2Nkbbp09jvrPASTar0/edit" target="_blank" style="color:var(--accent);font-weight:600;text-decoration:none">신영에셋 업무공유 DB 열기 ↗</a>
+    </div>
+    <div class="grid2">
+
+      <!-- 작성자 관리 -->
+      <div class="card" style="padding:20px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:7px">
+          <i class="ti ti-users" style="color:var(--accent)"></i> 작성자 관리
+        </h3>
+        <div id="notif-sender" class="notif"></div>
+        <div id="sender-list" style="margin-bottom:14px"></div>
+        <hr />
+        <p style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:10px">새 작성자 추가</p>
+        <div class="form-group"><label class="form-label">이름</label><input type="text" id="new-sender-name" placeholder="홍길동" /></div>
+        <div class="form-group"><label class="form-label">직책</label><input type="text" id="new-sender-title" placeholder="대리, 과장…" /></div>
+        <button class="btn btn-primary" style="width:100%" onclick="addSender()"><i class="ti ti-user-plus"></i> 추가</button>
+      </div>
+
+      <!-- 수신자 관리 -->
+      <div class="card" style="padding:20px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:7px">
+          <i class="ti ti-mail" style="color:var(--accent)"></i> 수신자 이메일 관리
+        </h3>
+        <div id="notif-recipient" class="notif"></div>
+        <div id="recipient-list" style="margin-bottom:14px"></div>
+        <hr />
+        <p style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:10px">새 수신자 추가</p>
+        <div class="form-group"><label class="form-label">이름 / 직책</label><input type="text" id="new-rec-name" placeholder="홍길동 과장" /></div>
+        <div class="form-group"><label class="form-label">이메일</label><input type="email" id="new-rec-email" placeholder="hong@syasset.com" onkeydown="if(event.key==='Enter')addRecipient()" /></div>
+        <button class="btn btn-primary" style="width:100%" onclick="addRecipient()"><i class="ti ti-plus"></i> 추가</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbzH4Ty2Y5_8Mw0CEPnZ7l55yQzr5LBtFfzJcmSeHW_IEmrplkvrzl4ehQS_Slfbh7ukFA/exec';
+const SK = { senders:'sy_senders', recipients:'sy_recipients', history:'sy_history' };
+
+const DEFAULT_SENDERS = [
+  {id:'s1',name:'이윤영',title:'상무',email:'yunyoung.lee@syasset.com'},
+  {id:'s2',name:'이계원',title:'이사',email:'lkw@syasset.com'},
+  {id:'s3',name:'이종목',title:'부장',email:'bearbbcd@syasset.com'},
+  {id:'s4',name:'조한준',title:'과장',email:'hjjo@syasset.com'},
+  {id:'s5',name:'권혁진',title:'과장',email:'hyukjin@syasset.com'},
+  {id:'s6',name:'장윤서',title:'대리',email:'ysjang@syasset.com'},
+  {id:'s7',name:'정혜원',title:'대리',email:'hwjung@syasset.com'},
+  {id:'s8',name:'진원창',title:'이사',email:'wcjin@syasset.com'},
+  {id:'s9',name:'문찬영',title:'대리',email:'mcy1213@syasset.com'}
+];
+const DEFAULT_RECIPIENTS = DEFAULT_SENDERS.map(s=>({id:'r'+s.id, name:`${s.name} ${s.title}`, email:s.email}));
+
+const COLORS = ['#3B5BDB','#6C63FF','#20B2AA','#E64980','#F76707','#2F9E44','#1098AD','#862E9C','#E67700'];
+const colorOf = n => COLORS[[...n].reduce((a,c)=>a+c.charCodeAt(0),0) % COLORS.length];
+const initials = n => n ? n.slice(-2) : '';
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const load = (k,d) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):d; } catch(e){return d;} };
+const save = (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch(e){} };
+
+let senders = load(SK.senders, DEFAULT_SENDERS);
+let recipients = load(SK.recipients, DEFAULT_RECIPIENTS);
+let history = load(SK.history, []);
+let activeUser = senders[0];
+let msgs = [];
+let selRecipients = new Set();
+let sending = false;
+
+const saveLocal = () => { save(SK.senders,senders); save(SK.recipients,recipients); save(SK.history,history); };
+
+function fmt(ts, full){
+  if(!ts) return '';
+  try {
+    const d = new Date(ts);
+    const date = d.toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'});
+    const time = d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+    return full ? d.toLocaleDateString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit'})+' '+time : date+' '+time;
+  } catch(e){ return ts; }
+}
+
+// ── API ──────────────────────────────────────────
+async function apiGet() {
+  const r = await fetch(API, {method:'GET', mode:'cors'});
+  return await r.json();
+}
+async function apiPost(data) {
+  const r = await fetch(API, {method:'POST', mode:'cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(data)});
+  return await r.json();
+}
+
+function setSync(state, text){
+  const bar = document.getElementById('sync-bar');
+  const dot = document.getElementById('conn-dot');
+  bar.className = 'sync-bar ' + state;
+  dot.className = 'conn-dot ' + (state==='ok'?'ok':state==='err'?'err':'');
+  bar.innerHTML = state==='loading'
+    ? `<div class="spinner"></div> ${text||'연결 중...'}`
+    : `<i class="ti ti-${state==='ok'?'circle-check':'alert-circle'}"></i> ${text}`;
+}
+
+async function loadMsgs(showLoad){
+  if(showLoad) setSync('loading','Google Sheets 연결 중...');
+  try {
+    const rows = await apiGet();
+    msgs = (Array.isArray(rows)?rows:[]).filter(r=>r['메시지ID']).map(r=>({
+      id: r['메시지ID'], name: r['작성자']||'', title: r['직책']||'',
+      text: r['내용']||'', ts: r['일시']||''
+    }));
+    setSync('ok', `Google Sheets 연결됨 — ${msgs.length}개 메시지 · 30초 자동 갱신`);
+    document.getElementById('msg-count').textContent = msgs.length+'건';
+    document.getElementById('last-sync').textContent = '동기화: '+fmt(new Date().toISOString());
+    renderChat(); refreshFilters();
+    const active = document.querySelector('.tab-content.active');
+    if(active && active.id==='tab-log') renderLog();
+  } catch(e){
+    setSync('err', '연결 실패 — 새로고침 버튼을 눌러 재시도하세요');
+  }
+}
+
+// ── TABS ──────────────────────────────────────────
+function switchTab(name, btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='log'){ refreshFilters(); renderLog(); }
+  if(name==='export'){ refreshFilters(); renderMailChips(); renderHistory(); }
+  if(name==='admin'){ renderSenderList(); renderRecipientList(); }
+}
+
+// ── USER ──────────────────────────────────────────
+function buildUserSelect(){
+  const sel = document.getElementById('active-user-select');
+  sel.innerHTML = senders.map(s=>`<option value="${s.id}">${s.name} ${s.title}</option>`).join('');
+  if(activeUser) sel.value = activeUser.id;
+}
+function onUserSwitch(){
+  activeUser = senders.find(s=>s.id===document.getElementById('active-user-select').value) || senders[0];
+  renderChat();
+}
+
+// ── CHAT ──────────────────────────────────────────
+function renderChat(){
+  const list = document.getElementById('msg-list');
+  if(!msgs.length){
+    list.innerHTML = '<div class="empty"><i class="ti ti-message-circle"></i><p>아직 공유된 업무가 없습니다.<br>첫 업무를 공유해 보세요!</p></div>';
+    return;
+  }
+  const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
+  list.innerHTML = msgs.map(m => {
+    const mine = activeUser && m.name === activeUser.name;
+    const col = colorOf(m.name);
+    return `<div class="msg-wrap ${mine?'mine':'others'}">
+      <div class="msg-row">
+        <div class="avatar" style="background:${col}20;color:${col}">${initials(m.name)}</div>
+        <div class="msg-bubble">${esc(m.text)}</div>
+      </div>
+      <div class="msg-meta">
+        ${!mine ? `<span class="msg-sender">${esc(m.name)} ${esc(m.title)}</span>` : ''}
+        <span>${fmt(m.ts)}</span>
+        ${mine ? `<button onclick="delMsg('${m.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-muted);padding:0;font-size:11px"><i class="ti ti-trash"></i></button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  if(atBottom) list.scrollTop = list.scrollHeight;
+}
+
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); } }
+
+async function sendMsg(){
+  if(sending) return;
+  const inp = document.getElementById('msg-input');
+  const text = inp.value.trim();
+  if(!text || !activeUser) return;
+  sending = true;
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="border-color:#fff;border-top-color:transparent"></div>';
+  try {
+    await apiPost({ action:'add', 일시:new Date().toISOString(), 작성자:activeUser.name, 직책:activeUser.title||'', 내용:text, 메시지ID:Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6) });
+    inp.value = '';
+    await loadMsgs(false);
+    document.getElementById('msg-list').scrollTop = 99999;
+  } catch(e){ alert('전송 실패. 네트워크를 확인해 주세요.'); }
+  finally { sending=false; btn.disabled=false; btn.innerHTML='<i class="ti ti-send"></i>'; }
+}
+
+async function delMsg(id){
+  if(!confirm('삭제하시겠습니까?')) return;
+  try { await apiPost({action:'delete', 메시지ID:id}); await loadMsgs(false); }
+  catch(e){ alert('삭제 실패.'); }
+}
+
+// ── LOG ───────────────────────────────────────────
+function refreshFilters(){
+  const names = [...new Set(msgs.map(m=>m.name))];
+  ['filter-author','exp-author'].forEach(id=>{
+    const el = document.getElementById(id); if(!el) return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">전체</option>' + names.map(n=>`<option value="${esc(n)}"${n===cur?' selected':''}>${esc(n)}</option>`).join('');
+  });
+}
+function renderLog(){
+  const tbody = document.getElementById('log-tbody');
+  const from = document.getElementById('filter-from').value;
+  const to   = document.getElementById('filter-to').value;
+  const auth = document.getElementById('filter-author').value;
+  let f = msgs.slice().reverse();
+  if(from) f = f.filter(m=>new Date(m.ts)>=new Date(from+'T00:00:00'));
+  if(to)   f = f.filter(m=>new Date(m.ts)<=new Date(to+'T23:59:59'));
+  if(auth) f = f.filter(m=>m.name===auth);
+  if(!f.length){ tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-muted)">해당 기간의 기록이 없습니다</td></tr>'; return; }
+  tbody.innerHTML = f.map(m=>{
+    const c = colorOf(m.name);
+    return `<tr>
+      <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${fmt(m.ts,true)}</td>
+      <td><div style="display:flex;align-items:center;gap:6px"><div class="avatar" style="background:${c}20;color:${c};font-size:10px;width:24px;height:24px">${initials(m.name)}</div>${esc(m.name)}</div></td>
+      <td style="max-width:340px;word-break:break-word">${esc(m.text)}</td>
+      <td><button onclick="delMsg('${m.id}')" class="btn btn-sm btn-danger"><i class="ti ti-trash"></i></button></td>
+    </tr>`;
+  }).join('');
+}
+function clearFilters(){ ['filter-author','filter-from','filter-to'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';}); renderLog(); }
+
+// ── EXCEL ─────────────────────────────────────────
+function exportExcel(){
+  const from = document.getElementById('exp-from').value;
+  const to   = document.getElementById('exp-to').value;
+  const auth = document.getElementById('exp-author').value;
+  let data = msgs.slice();
+  if(from) data = data.filter(m=>new Date(m.ts)>=new Date(from+'T00:00:00'));
+  if(to)   data = data.filter(m=>new Date(m.ts)<=new Date(to+'T23:59:59'));
+  if(auth) data = data.filter(m=>m.name===auth);
+  if(!data.length){ alert('해당 조건의 데이터가 없습니다.'); return; }
+  const rows = [['일시','작성자','직책','공유 내용'], ...data.map(m=>[fmt(m.ts,true),m.name,m.title||'',m.text])];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:22},{wch:10},{wch:8},{wch:60}];
+  XLSX.utils.book_append_sheet(wb,ws,'업무공유');
+  XLSX.writeFile(wb,`신영에셋_업무공유_${from||'전체'}~${to||'전체'}.xlsx`);
+}
+
+// ── MAIL ──────────────────────────────────────────
+function renderMailChips(){
+  const el = document.getElementById('mail-chips'); if(!el) return;
+  if(!recipients.length){ el.innerHTML='<span style="font-size:12px;color:var(--text-muted)">관리 탭에서 수신자를 추가하세요</span>'; return; }
+  el.innerHTML = recipients.map(r=>`
+    <span class="rchip ${selRecipients.has(r.id)?'on':''}" onclick="toggleRec('${r.id}')">
+      <i class="ti ti-${selRecipients.has(r.id)?'check':'user'}" style="font-size:11px"></i>
+      ${esc(r.name)}
+    </span>`).join('');
+}
+function toggleRec(id){ selRecipients.has(id)?selRecipients.delete(id):selRecipients.add(id); renderMailChips(); }
+
+function buildXlsxB64(data){
+  const rows = [['일시','작성자','직책','공유 내용'], ...data.map(m=>[fmt(m.ts,true),m.name,m.title||'',m.text])];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:22},{wch:10},{wch:8},{wch:60}];
+  XLSX.utils.book_append_sheet(wb,ws,'업무공유');
+  return XLSX.write(wb,{type:'base64',bookType:'xlsx'});
+}
+
+async function sendMail(){
+  const notif = document.getElementById('mail-notif');
+  const sel = [...selRecipients].map(id=>recipients.find(r=>r.id===id)).filter(Boolean);
+  if(!sel.length){ notif.textContent='수신자를 1명 이상 선택해 주세요.'; notif.className='notif notif-danger'; notif.style.display='block'; return; }
+  const from = document.getElementById('mail-from').value;
+  const to   = document.getElementById('mail-to').value;
+  const subj = document.getElementById('mail-subject').value || '[업무공유] 신영에셋 업무 공유 보고서';
+  let data = msgs.slice();
+  if(from) data = data.filter(m=>new Date(m.ts)>=new Date(from+'T00:00:00'));
+  if(to)   data = data.filter(m=>new Date(m.ts)<=new Date(to+'T23:59:59'));
+  if(!data.length){ notif.textContent='해당 기간의 공유 내용이 없습니다.'; notif.className='notif notif-danger'; notif.style.display='block'; return; }
+
+  notif.innerHTML='<div class="spinner" style="display:inline-block;vertical-align:middle;margin-right:6px"></div> 발송 중...';
+  notif.className='notif notif-warning'; notif.style.display='block';
+
+  const fname = `신영에셋_업무공유_${from||'전체'}~${to||'전체'}.xlsx`;
+  const b64 = buildXlsxB64(data);
+  const toStr = sel.map(r=>r.email).join(',');
+  const body = `<p>안녕하세요,</p><p>신영에셋 업무 공유 내용을 전달드립니다.</p>
+    <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:13px">
+      <tr style="background:#EEF2FF"><th>일시</th><th>작성자</th><th>직책</th><th>내용</th></tr>
+      ${data.map(m=>`<tr><td style="white-space:nowrap">${fmt(m.ts,true)}</td><td>${esc(m.name)}</td><td>${esc(m.title)}</td><td>${esc(m.text)}</td></tr>`).join('')}
+    </table><br><p>첨부파일(엑셀)에서도 확인하실 수 있습니다.</p>`;
+  const bound = 'bnd_'+Date.now();
+  const raw = [`To: ${toStr}`,`Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subj)))}?=`,'MIME-Version: 1.0',`Content-Type: multipart/mixed; boundary="${bound}"`,``,`--${bound}`,'Content-Type: text/html; charset=UTF-8','',body,'',`--${bound}`,`Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; name="${fname}"`,'Content-Transfer-Encoding: base64',`Content-Disposition: attachment; filename="${fname}"`,``,b64,'',`--${bound}--`].join('\r\n');
+  const encoded = btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+
+  try {
+    const resp = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${window.__gmailToken||'NEED_TOKEN'}`},
+      body: JSON.stringify({raw:encoded})
+    });
+    if(resp.ok){
+      notif.innerHTML=`<i class="ti ti-check"></i> 발송 완료! 수신: ${sel.map(r=>r.name).join(', ')}`;
+      notif.className='notif notif-success'; notif.style.display='block';
+      const rec = {ts:Date.now(), recipients:sel.map(r=>r.name+'<'+r.email+'>'), period:`${from||'전체'}~${to||'전체'}`, count:data.length, file:fname};
+      history.unshift(rec); if(history.length>50) history=history.slice(0,50);
+      saveLocal(); renderHistory();
+    } else {
+      notif.innerHTML='<i class="ti ti-alert-circle"></i> Gmail 인증 필요 — Claude.ai에서 Gmail 커넥터를 연결하거나 수동 발송해 주세요.';
+      notif.className='notif notif-danger'; notif.style.display='block';
+    }
+  } catch(e){
+    notif.innerHTML='<i class="ti ti-alert-circle"></i> Gmail 인증 필요 — Claude.ai에서 Gmail 커넥터를 연결하거나 수동 발송해 주세요.';
+    notif.className='notif notif-danger'; notif.style.display='block';
+  }
+}
+
+function renderHistory(){
+  const el = document.getElementById('send-history'); if(!el) return;
+  if(!history.length){ el.innerHTML='<div class="empty" style="padding:24px"><i class="ti ti-mail-off"></i><p>발송 이력이 없습니다</p></div>'; return; }
+  el.innerHTML = history.slice(0,10).map(h=>`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);gap:10px">
+      <div>
+        <span class="badge badge-success" style="margin-bottom:5px"><i class="ti ti-check"></i> 발송완료</span>
+        <p style="font-size:13px;margin:2px 0">${esc(h.file)} <span class="badge badge-accent" style="font-size:10px">${h.count}건</span></p>
+        <p style="font-size:11px;color:var(--text-muted)">${esc(h.recipients.join(' / '))}</p>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);flex-shrink:0">${fmt(new Date(h.ts).toISOString())}</p>
+    </div>`).join('');
+}
+
+// ── ADMIN ─────────────────────────────────────────
+function renderSenderList(){
+  const el = document.getElementById('sender-list');
+  el.innerHTML = senders.map(s=>`
+    <div class="member-row">
+      <div class="avatar" style="background:${colorOf(s.name)}20;color:${colorOf(s.name)}">${initials(s.name)}</div>
+      <div class="member-info" style="flex:1">
+        <p>${esc(s.name)} <span style="margin-left:4px">${esc(s.title)}</span></p>
+        <span>${esc(s.email||'')}</span>
+      </div>
+      <button class="btn btn-sm btn-danger" onclick="delSender('${s.id}')"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+}
+function addSender(){
+  const name = document.getElementById('new-sender-name').value.trim();
+  const title = document.getElementById('new-sender-title').value.trim();
+  const notif = document.getElementById('notif-sender');
+  if(!name){ notif.textContent='이름을 입력해 주세요.'; notif.className='notif notif-danger'; notif.style.display='block'; return; }
+  senders.push({id:'s'+Date.now(),name,title,email:''});
+  saveLocal(); document.getElementById('new-sender-name').value=''; document.getElementById('new-sender-title').value='';
+  notif.textContent=`${name} 작성자가 추가되었습니다.`; notif.className='notif notif-success'; notif.style.display='block';
+  renderSenderList(); buildUserSelect();
+}
+function delSender(id){
+  if(!confirm('삭제하시겠습니까?')) return;
+  senders = senders.filter(s=>s.id!==id);
+  if(activeUser&&activeUser.id===id) activeUser=senders[0]||null;
+  saveLocal(); renderSenderList(); buildUserSelect();
+}
+function renderRecipientList(){
+  const el = document.getElementById('recipient-list');
+  el.innerHTML = recipients.map(r=>`
+    <div class="member-row">
+      <i class="ti ti-mail" style="font-size:16px;color:var(--text-muted)"></i>
+      <div class="member-info" style="flex:1">
+        <p>${esc(r.name)}</p>
+        <span>${esc(r.email)}</span>
+      </div>
+      <button class="btn btn-sm btn-danger" onclick="delRecipient('${r.id}')"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+}
+function addRecipient(){
+  const name = document.getElementById('new-rec-name').value.trim();
+  const email = document.getElementById('new-rec-email').value.trim();
+  const notif = document.getElementById('notif-recipient');
+  if(!name||!email){ notif.textContent='이름과 이메일을 모두 입력해 주세요.'; notif.className='notif notif-danger'; notif.style.display='block'; return; }
+  if(!/\S+@\S+\.\S+/.test(email)){ notif.textContent='유효한 이메일 주소를 입력해 주세요.'; notif.className='notif notif-danger'; notif.style.display='block'; return; }
+  if(recipients.find(r=>r.email===email)){ notif.textContent='이미 등록된 이메일입니다.'; notif.className='notif notif-danger'; notif.style.display='block'; return; }
+  recipients.push({id:'r'+Date.now(),name,email}); saveLocal();
+  document.getElementById('new-rec-name').value=''; document.getElementById('new-rec-email').value='';
+  notif.textContent=`${name} 수신자가 추가되었습니다.`; notif.className='notif notif-success'; notif.style.display='block';
+  renderRecipientList();
+}
+function delRecipient(id){
+  if(!confirm('수신자를 삭제하시겠습니까?')) return;
+  recipients = recipients.filter(r=>r.id!==id); selRecipients.delete(id);
+  saveLocal(); renderRecipientList(); renderMailChips();
+}
+
+// ── INIT ──────────────────────────────────────────
+function init(){
+  buildUserSelect();
+  activeUser = senders[0]||null;
+  const today = new Date().toISOString().split('T')[0];
+  ['filter-from','filter-to','exp-from','exp-to','mail-from','mail-to'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=today; });
+  loadMsgs(true);
+  setInterval(()=>loadMsgs(false), 30000);
+}
+init();
+</script>
+</body>
+</html>
